@@ -2,6 +2,8 @@ package nvgtt.data.db.datafeeder;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,11 +31,78 @@ public class App
     public static void main( String[] args ) throws HttpRequestException, Exception
     {
     	print("Server starting...");
-        
-    	GraphDatabaseService graphDb = new GraphDatabaseFactory()
-    			.newEmbeddedDatabase(new File("C:/neo4j-enterprise-3.1.0/data/databases/wiki.db"));
     	
-    	feedEmptyNodes(graphDb);
+    	GraphDatabaseService graphDb = new GraphDatabaseFactory()
+    			.newEmbeddedDatabase(new File("C:/neo4j-enterprise-3.1.0/data/databases/test3.db"));
+    	
+    	//Thread pool to download wikipedia data
+    	ExecutorService downloadPool = Executors.newFixedThreadPool(200);
+    	
+    	//List to store pageData 
+    	Vector<WikipediaPageData> pageDataList = new Vector<WikipediaPageData>();
+    	
+		//Thread safe integer
+		AtomicInteger downloadCount = new AtomicInteger();
+    	
+		//must use some thing to store download data to speedup 
+		
+    	print("Getting empty links");    	
+    	ArrayList<String> emptyLinks = getEmptyLinks(graphDb, 1000);
+		final int size = emptyLinks.size();
+			
+		//Iterate thru empty links
+		for(String emptyLink : emptyLinks) {
+			
+			downloadPool.execute(() -> {
+				try {
+					pageDataList.add(WikipediaApi.getAbstractLinks(emptyLink, "en"));
+				} catch(Exception e) {
+					print("Error " + e.getMessage());
+				}
+				
+				int currentCount = downloadCount.incrementAndGet();
+				print("Downloaded " + currentCount + "/" + emptyLinks.size());
+				
+				//Once everything has been done
+				if(currentCount == size) {
+					downloadPool.shutdown(); //Shutdown download pool
+					
+					while(!downloadPool.isShutdown());
+					
+					//Insert data into database
+			    	int count = 0;
+			    	
+			    	try (Transaction tx = graphDb.beginTx()) {
+			    		
+				    	for(WikipediaPageData pageData : pageDataList) {
+				    		feedDatabase(graphDb, pageData);
+				    		count++;
+				    		print("Inserted " + count + "/" + pageDataList.size());
+				    	}	
+
+				    	tx.success();
+			    	} catch(Exception e) {
+			    		print("ERROR WHILE INSERTING");
+			    		print(e);
+			    		print(e.getMessage());
+			    		print(e.getLocalizedMessage());
+			    	}
+				}
+			});
+		}
+    	
+    	//--------------------------
+    	
+    
+    	
+
+
+    	//---------------------------
+    	
+    	
+    	
+    	
+    	//feedEmptyNodes(graphDb);
     	
     	//feedDatabase(graphDb, WikipediaApi.getAbstractLinks("MQTT", "en"));
     	
@@ -47,7 +116,7 @@ public class App
     	//Thread pool to execute tasks
     	print("Creating thread pools...");
     	ExecutorService dbInsertPool = Executors.newFixedThreadPool(1);
-    	ExecutorService downloadPool = Executors.newFixedThreadPool(20);
+    	ExecutorService downloadPool = Executors.newFixedThreadPool(5);
     	
 		//Thread safe integers
 		AtomicInteger downloadCount = new AtomicInteger();
@@ -55,7 +124,7 @@ public class App
     	
     	//Get empty links
     	print("Getting empty links");    	
-    	ArrayList<String> emptyLinks = getEmptyLinks(graphDb, 1000);
+    	ArrayList<String> emptyLinks = getEmptyLinks(graphDb, 100);
 		final int size = emptyLinks.size();
 			
 		//Iterate thru empty links
@@ -132,7 +201,8 @@ public class App
     	
     	Node targetArticle = null;
     	
-    	try (Transaction tx = graphDb.beginTx()) {
+    	//try (Transaction tx = graphDb.beginTx()) {
+    		
 	    	//Check if the target article exists, if not, create it
     		try {
     			targetArticle = graphDb.findNode(NvgttLabels.Article, "wikiPageId", pageData.PageId);
@@ -201,14 +271,14 @@ public class App
 			}
 				
 			//finish transaction
-			tx.success();
+			/*tx.success();
 			
 		} catch(Exception e) {
     		print("Error while adding page data.");
     		print(e.getMessage());
     		print(e.getLocalizedMessage());
     		print(e);
-    	}
+    	}*/
     }
     
     
