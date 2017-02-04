@@ -30,7 +30,7 @@ public class WikipediaApi {
 		}
 	}
 	
-	public static void getAbstractLinks(final String page, String lang) throws HttpRequestException, Exception {
+	public static WikipediaPageData getAbstractLinks(final String page, String lang) throws HttpRequestException, Exception {
 
 	    //Obs.: Page must already been encoded
 
@@ -96,13 +96,15 @@ public class WikipediaApi {
         	}
         }        
         
-        print(pageTitle);
-        print(pageId);
-        print("");
+        //print(pageTitle);
+        //print(pageId);
+        //print("");
         
-        for(String l : links) {
-        	print(l);
-        }
+        //for(String l : links) {
+        	//print(l);
+        //}
+        
+		return new WikipediaPageData(pageTitle, page, pageId, links);
 	}
 	
 	static void print(Object x) {
