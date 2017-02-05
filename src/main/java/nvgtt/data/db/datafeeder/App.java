@@ -1,8 +1,11 @@
 package nvgtt.data.db.datafeeder;
 
 import java.io.File;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.TimeZone;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,23 +23,23 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
 
-/**
- * Hello world!
- *
- */
 public class App 
 {
-	static Transaction tx;
+	//static Transaction tx;
+	
+	static long currentTime = System.currentTimeMillis();
 	
     public static void main( String[] args ) throws HttpRequestException, Exception
-    {
+    {   
+    	
     	print("Server starting...");
     	
     	GraphDatabaseService graphDb = new GraphDatabaseFactory()
     			.newEmbeddedDatabase(new File("C:/neo4j-enterprise-3.1.0/data/databases/test3.db"));
     	
+    	
     	//Thread pool to download wikipedia data
-    	ExecutorService downloadPool = Executors.newFixedThreadPool(200);
+    	/*ExecutorService downloadPool = Executors.newFixedThreadPool(200);
     	
     	//List to store pageData 
     	Vector<WikipediaPageData> pageDataList = new Vector<WikipediaPageData>();
@@ -47,7 +50,7 @@ public class App
 		//must use some thing to store download data to speedup 
 		
     	print("Getting empty links");    	
-    	ArrayList<String> emptyLinks = getEmptyLinks(graphDb, 1000);
+    	ArrayList<String> emptyLinks = getEmptyLinks(graphDb, 100);
 		final int size = emptyLinks.size();
 			
 		//Iterate thru empty links
@@ -81,6 +84,11 @@ public class App
 				    	}	
 
 				    	tx.success();
+				    	
+				    	double timeElapsed = ((double)System.currentTimeMillis() - currentTime) / 1000;
+
+				    	print("Time elapsed: " + timeElapsed);
+				    	
 			    	} catch(Exception e) {
 			    		print("ERROR WHILE INSERTING");
 			    		print(e);
@@ -89,7 +97,7 @@ public class App
 			    	}
 				}
 			});
-		}
+		}*/
     	
     	//--------------------------
     	
@@ -102,7 +110,7 @@ public class App
     	
     	
     	
-    	//feedEmptyNodes(graphDb);
+    	feedEmptyNodes(graphDb);
     	
     	//feedDatabase(graphDb, WikipediaApi.getAbstractLinks("MQTT", "en"));
     	
@@ -143,8 +151,12 @@ public class App
 						print("Inserted: " + currentDbInsertCount + "/" + size);
 						
 						//If everything has been finished, shutdown the pool
-						if(currentDbInsertCount == size)
+						if(currentDbInsertCount == size) {
 							dbInsertPool.shutdown(); // Disable new tasks from being submitted
+					    	double timeElapsed = ((double)System.currentTimeMillis() - currentTime) / 1000;
+
+					    	print("Time elapsed: " + timeElapsed);	
+						}
 					});
 					
 				} catch(Exception e) {
@@ -201,7 +213,7 @@ public class App
     	
     	Node targetArticle = null;
     	
-    	//try (Transaction tx = graphDb.beginTx()) {
+    	try (Transaction tx = graphDb.beginTx()) {
     		
 	    	//Check if the target article exists, if not, create it
     		try {
@@ -271,14 +283,14 @@ public class App
 			}
 				
 			//finish transaction
-			/*tx.success();
+			tx.success();
 			
 		} catch(Exception e) {
     		print("Error while adding page data.");
     		print(e.getMessage());
     		print(e.getLocalizedMessage());
     		print(e);
-    	}*/
+    	}/**/
     }
     
     

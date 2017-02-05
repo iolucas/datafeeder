@@ -1,58 +1,63 @@
 package nvgtt.data.db.datafeeder;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class WikiDownloader {
-
+	
+	static ObjectStorage<String, Long> linksIds;
+	static ObjectStorage<Long, ArrayList<String>> pageLinks;
+	static ObjectStorage<Long, String> pageIds;
+	
 	public static void main(String[] args) {
 		
-		ObjectStorage<String, Long> storage = new ObjectStorage<String, Long>("lucas.ser");
+		linksIds = new ObjectStorage<String, Long>("linksIds.ser");
+		pageLinks = new ObjectStorage<Long, ArrayList<String>>("pageLinks.ser");
+		pageIds = new ObjectStorage<Long, String>("pageIds.ser");
 		
-		print(storage.get("ae"));
-		
-		storage.put("ae", (long) 123);
-		
+		ExecutorService downloadPool = Executors.newFixedThreadPool(200);
+		AtomicInteger downloadCount = new AtomicInteger();
 		
 		
-		print(storage.save());
 		
-		print("DOne");
 		
-		/*Hashtable<String, Long> test = new Hashtable<String, Long>();
+		/*feedData("MQTT");
 		
-		test.put("Lucas", (long) 12324324);
+		linksIds.save();
+		pageLinks.save();
+		pageIds.save();*/
 		
-		try {
-			FileOutputStream fos = new FileOutputStream("hashtable.ser");
-	        ObjectOutputStream oos = new ObjectOutputStream(fos);
-	             
-	        oos.writeObject(test);
-	        oos.close();
-	        fos.close();
-		} catch(Exception e) {
-			print(e);
+		print(linksIds.get("MQTT"));
+		print(pageIds.get(linksIds.get("MQTT")));
+		
+		for(String link : pageLinks.get(linksIds.get("MQTT"))) {
+			print(link);
 		}
 		
+		/*WikipediaPageData pageData = pageDatas.get(linksIds.get("MQTT"));
 		
+		for(String link : pageData.Links) {
+			print(link);
+		}*/
+		
+		
+
+		
+	}
+	
+	static void feedData(String url) {
 		try {
-			FileInputStream fis = new FileInputStream("hashtable.ser");
-			ObjectInputStream ois = new ObjectInputStream(fis);
+			WikipediaPageData pageData = WikipediaApi.getAbstractLinks(url, "en");
 			
-			Hashtable<String, Long> test2 = (Hashtable<String, Long>) ois.readObject();
+			linksIds.put(url, pageData.PageId);
+			pageLinks.put(pageData.PageId, pageData.Links);
+			pageIds.put(pageData.PageId, pageData.Title);
+
 			
-			print(test2.get("Lucas"));
-			
-		} catch(Exception e) {
-			print(e);
-		}
+		} catch(Exception e) {}
 		
-		
-		print("Done");
-*/
 	}
 	
 	static void print(Object x) {
