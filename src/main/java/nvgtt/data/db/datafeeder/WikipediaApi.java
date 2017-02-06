@@ -21,7 +21,9 @@ public class WikipediaApi {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			getAbstractLinks("Tibia_(video_game)", "en");
+			for(String link : getAbstractLinks("MQTT", "en").Links) {
+				print(link);
+			}
 		} catch(Exception e) {
 			print(e.getMessage());
 		} finally {

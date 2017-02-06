@@ -317,7 +317,7 @@ public class App
 		});
 	}
     
-	static void print(Object x) {
+	public static void print(Object x) {
 		System.out.println(x);
 	}
 }
