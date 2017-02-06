@@ -19,9 +19,9 @@ public class WikiDownloader {
 		
 		//Init all collections
 		print("Initing collections...");
+
 		pendentLinks = new StorageQueue<String>("pendent-links.ser");
 		linksIds = new ObjectStorage<String, Long>("linksIds.ser");
-		pageLinks = new ObjectStorage<Long, ArrayList<String>>("pageLinks.ser");
 		pageIds = new ObjectStorage<Long, String>("pageIds.ser");
 		
 		//pendentLinks.offer("MQTT");
@@ -39,6 +39,11 @@ public class WikiDownloader {
 	
 	static void downloadData(Runnable callback) {
 		
+		//Init pageLinks batch storage
+		App.print("Initing pagelinksbatch...");
+		String pageLinksBatchFileName = "pageLinksBatch" + System.currentTimeMillis() + ".ser";
+		pageLinks = new ObjectStorage<Long, ArrayList<String>>("pageLinksBatches/" + pageLinksBatchFileName);
+		
 		//Init thread pool
 		print("Initing thread pool...");
 		ExecutorService downloadPool = Executors.newFixedThreadPool(100);
@@ -46,7 +51,7 @@ public class WikiDownloader {
 		//thread safe integer for download count
 		AtomicInteger downloadCount = new AtomicInteger();
 				
-		final int maxLinksDownload = Math.min(pendentLinks.size(), 2000);
+		final int maxLinksDownload = Math.min(pendentLinks.size(), 5000);
 				
 		//If there is nothing to download, shutdown download pool
 		if(maxLinksDownload == 0)

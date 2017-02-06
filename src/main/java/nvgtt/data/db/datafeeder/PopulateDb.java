@@ -79,14 +79,14 @@ public class PopulateDb {
 					
 					inserter.createRelationship(sourceNodeId, targetNodeId, NvgttRelations.RefersTo, null);
 					
-					count++;
-					App.print("Done relation " + count + "/" + size);
-					
 				} catch(Exception e) {
 					App.print("Fail on creating relationship.");
 					e.printStackTrace();
 				}
 			}
+			
+			count++;
+			App.print("Done relation " + count + "/" + size);
 		}
 
     	App.print("Done with relations.");	
