@@ -65,7 +65,7 @@ public class PopulateDb {
     	App.print("Creating relations...");
 
 		count = 0;
-		size = pageIds.size();
+		size = pageLinks.size();
     		
 		for(Entry<Long, ArrayList<String>> page : pageLinks.entrySet()) {
 			
