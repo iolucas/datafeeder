@@ -6,56 +6,56 @@ import java.util.Hashtable;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import java.lang.Thread;
 
 public class WikiDownloader {
 	
-	static ObjectStorage<String, Long> linksIds;
-	static ObjectStorage<Long, ArrayList<String>> pageLinks;
-	static ObjectStorage<Long, String> pageIds;
-	static StorageQueue<String> pendentLinks;
+	ObjectStorage<String, Long> linksIds;
+	ObjectStorage<Long, String> pageIds;
+	StorageQueue<String> pendentLinks;
 	
 	public static void main(String[] args) {
 		
 		//Init all collections
 		print("Initing collections...");
-
-		pendentLinks = new StorageQueue<String>("pendent-links.ser");
-		linksIds = new ObjectStorage<String, Long>("linksIds.ser");
-		pageIds = new ObjectStorage<Long, String>("pageIds.ser");
 		
 		//pendentLinks.offer("MQTT");
 		
-		recursiveDownload();		
+		WikiDownloader downloader = new WikiDownloader();
+		downloader.downloadDataAndSave(5000);
+		
+		App.print("Done download.");
+
+		//recursiveDownload();		
 
 	}
 	
-	static void recursiveDownload() {
-		
-		downloadData(()->{
-			recursiveDownload();
-		});		
+	public WikiDownloader() {
+		pendentLinks = new StorageQueue<String>("pendent-links.ser");
+		linksIds = new ObjectStorage<String, Long>("linksIds.ser");
+		pageIds = new ObjectStorage<Long, String>("pageIds.ser");
 	}
 	
-	static void downloadData(Runnable callback) {
+	public void downloadDataAndSave(int batchSize) {
 		
 		//Init pageLinks batch storage
 		App.print("Initing pagelinksbatch...");
 		String pageLinksBatchFileName = "pageLinksBatch" + System.currentTimeMillis() + ".ser";
-		pageLinks = new ObjectStorage<Long, ArrayList<String>>("pageLinksBatches/" + pageLinksBatchFileName);
+		ObjectStorage<Long, ArrayList<String>> pageLinks = 
+				new ObjectStorage<Long, ArrayList<String>>("pageLinksBatches/" + pageLinksBatchFileName);
 		
 		//Init thread pool
 		print("Initing thread pool...");
 		ExecutorService downloadPool = Executors.newFixedThreadPool(100);
-				
+
 		//thread safe integer for download count
 		AtomicInteger downloadCount = new AtomicInteger();
 				
-		final int maxLinksDownload = Math.min(pendentLinks.size(), 5000);
+		final int maxLinksDownload = Math.min(pendentLinks.size(), batchSize);
 				
-		//If there is nothing to download, shutdown download pool
-		if(maxLinksDownload == 0)
-			downloadPool.shutdown();
 				
 		//Download stuff while the max links has not been achieved or the queue is not empty
 		print("Initing download of " + maxLinksDownload + " links...");
@@ -110,55 +110,47 @@ public class WikiDownloader {
 					int currentDownloadCount = downloadCount.incrementAndGet();
 							
 					print("Downloaded: " + currentDownloadCount + "/" + maxLinksDownload);
-							
-					//If everything has been finished, shutdown the pool
-					if(currentDownloadCount == maxLinksDownload) {
-						print("Shutting down queue...");
-						downloadPool.shutdown(); // Disable new tasks from being submitted
-								
-						while(!downloadPool.isShutdown());
-								
-						print("Saving stuff...");
-								
-						while(true) {
-							
-							if(!linksIds.save()) {
-								print("Error while saving linksIds.");
-								break;
-							}
-							print("linksIds saved.");
-										
-							if(!pageIds.save()) {
-								print("Error while saving pageIds.");
-								break;
-							}
-							print("pageIds saved.");
-									
-							if(!pageLinks.save()) {
-								print("Error while saving pageLinks.");
-								break;
-							}
-							print("pageLinks saved.");
-									
-							if(!pendentLinks.save()) {
-								print("Error while saving pendentLinks.");
-								break;
-							}
-							print("pendentLinks saved.");
-									
-							print("Done successfully.");
-							break;
-						}
-								
-						//Execute finish callback
-						callback.run();
-					}
 				}
 			});		
 		}
 				
-		print("Everything has been initiated.");		
-
+		print("Everything has been initiated.");
+		
+		//Init shutdown
+		downloadPool.shutdown();
+		
+		//Blocks until everything is done
+		while(!downloadPool.isTerminated());
+		
+		
+		
+		print("Saving stuff...");
+		
+		if(!linksIds.save()) {
+			print("Error while saving linksIds.");
+			return;
+		}
+		print("linksIds saved.");
+					
+		if(!pageIds.save()) {
+			print("Error while saving pageIds.");
+			return;
+		}
+		print("pageIds saved.");
+				
+		if(!pageLinks.save()) {
+			print("Error while saving pageLinks.");
+			return;
+		}
+		print("pageLinks saved.");
+				
+		if(!pendentLinks.save()) {
+			print("Error while saving pendentLinks.");
+			return;
+		}
+		print("pendentLinks saved.");
+				
+		print("Save successfully.");		
 	}
 	
 	static void print(Object x) {
