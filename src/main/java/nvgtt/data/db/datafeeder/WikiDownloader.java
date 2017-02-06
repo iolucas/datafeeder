@@ -25,11 +25,12 @@ public class WikiDownloader {
 		//pendentLinks.offer("MQTT");
 		
 		WikiDownloader downloader = new WikiDownloader();
-		downloader.downloadDataAndSave(5000);
 		
-		App.print("Done download.");
-
-		//recursiveDownload();		
+		while(true) {
+			downloader.downloadDataAndSave(30000);
+			
+			App.print("Done download.");
+		}
 
 	}
 	
@@ -49,7 +50,7 @@ public class WikiDownloader {
 		
 		//Init thread pool
 		print("Initing thread pool...");
-		ExecutorService downloadPool = Executors.newFixedThreadPool(100);
+		ExecutorService downloadPool = Executors.newFixedThreadPool(200);
 
 		//thread safe integer for download count
 		AtomicInteger downloadCount = new AtomicInteger();
