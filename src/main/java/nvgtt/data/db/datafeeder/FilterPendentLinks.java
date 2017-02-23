@@ -38,6 +38,8 @@ public class FilterPendentLinks {
 		filteredPendentLinks.save();
 		
 		App.print(filteredPendentLinks.size());
+		
+		App.print("Saved");
 	}
 
 }

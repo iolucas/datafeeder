@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class CheckData {
 	
 	public static void main(String[] args) {
+		App.print("Loading data...");
 		StorageQueue<String> pendentLinks = new StorageQueue<String>("pendent-links.ser");
 		ObjectStorage<String, Long> linksIds = new ObjectStorage<String, Long>("linksIds.ser");
 		//ObjectStorage<Long, ArrayList<String>> pageLinks = new ObjectStorage<Long, ArrayList<String>>("pageLinks.ser");

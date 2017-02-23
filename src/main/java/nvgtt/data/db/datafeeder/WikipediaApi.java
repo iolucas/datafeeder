@@ -40,6 +40,7 @@ public class WikipediaApi {
 
 	    HttpRequest request = HttpRequest.get(reqUrl);
 	    
+	    
 	    if(request.code() != 200)
 	    	throw new Exception("Failed in downloading " + page + " Code: " + request.code());
 	  
