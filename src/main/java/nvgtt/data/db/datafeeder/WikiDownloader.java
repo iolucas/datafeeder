@@ -9,7 +9,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.lang.Thread;
 import java.sql.Time;
 
@@ -24,15 +26,15 @@ public class WikiDownloader {
 		//Init all collections
 		print("Initing collections...");
 		
-		//pendentLinks.offer("MQTT");
+		
 		
 		WikiDownloader downloader = new WikiDownloader();
 		
-		while(true) {
+		do {
 			downloader.downloadDataAndSave(10000, 100);
 			
 			App.print("Done download.");
-		}
+		} while(false);
 
 	}
 	
@@ -40,6 +42,9 @@ public class WikiDownloader {
 		pendentLinks = new StorageQueue<String>("pendent-links.ser");
 		linksIds = new ObjectStorage<String, Long>("linksIds.ser");
 		pageIds = new ObjectStorage<Long, String>("pageIds.ser");
+		
+		//pendentLinks.offer("MusicXML");
+		//pendentLinks.offer("TensorFlow");
 	}
 	
 	public void downloadDataAndSave(int batchSize, int threadPoolSize) {
@@ -80,7 +85,10 @@ public class WikiDownloader {
 					
 			//If the current link has already been downloaded,
 			//Sum one unit to the track value and skip it
-			if(linksIds.contains(currentLink)) {
+
+			boolean linkAlreadyDownloaded = linksIds.contains(currentLink);
+			
+			if(linkAlreadyDownloaded) {
 				downloadCount.incrementAndGet();
 				continue;
 			}
@@ -94,12 +102,13 @@ public class WikiDownloader {
 					print("Downloading " + currentLink + "...");
 					
 					WikipediaPageData pageData = WikipediaApi.getAbstractLinks(currentLink, "en");
-							
+						
 					//Ensure downloaded url is attached to the pageId
 					linksIds.put(pageData.Url, pageData.PageId);
-							
-					//Check if the page has not been downloaded yet, if not
-					if(!pageIds.contains(pageData.PageId)) {
+
+					boolean pageNotDownloaded = !pageIds.contains(pageData.PageId);
+					
+					if(pageNotDownloaded) {
 								
 						//Update page ids
 						pageIds.put(pageData.PageId, pageData.Title);
@@ -115,22 +124,20 @@ public class WikiDownloader {
 						}
 					}
 					
+					int currentDownloadCount = downloadCount.incrementAndGet();
+					print(getTimeStamp() + " Downloaded: " + currentDownloadCount + "/" + maxLinksDownload);
+					
 					//If successful, remove current link from fail list
 					//failRequestList.remove(currentLink);				
 
 				} catch (Exception e) {
+				
 					//If something fail, put link back to queue
 					print("Error. Putting " + currentLink + " back to queue...");
 					pendentLinks.offer(currentLink);
 					print("Done putting " + currentLink + " back to queue.");
 					e.printStackTrace();
 					
-				} finally {
-							
-					int currentDownloadCount = downloadCount.incrementAndGet();
-					
-					
-					print(getTimeStamp() + " Downloaded: " + currentDownloadCount + "/" + maxLinksDownload);
 				}
 			});		
 		}
